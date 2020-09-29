@@ -11,11 +11,14 @@ from osgeo import gdal
 tile_server = "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
 temp_dir = os.path.join(os.path.dirname(__file__), 'temp')
 output_dir = os.path.join(os.path.dirname(__file__), 'output')
-zoom = 12
+zoom = 13
+
 lon_min = 121
-lon_max = 122
-lat_min = 24
-lat_max = 25
+lat_min = 23
+lon_max = lon_min + 1
+lat_max = lat_min + 1
+# lon_max = 122
+# lat_max = 25
 #-----------------------------------#
 
 
@@ -61,7 +64,7 @@ for x in range(x_min, x_max + 1):
 print("Download complete")
 
 print("Merging tiles")
-merge_tiles(temp_dir + '/*.tif', output_dir + '/merged1.tif')
+merge_tiles(temp_dir + '/*.tif', output_dir + '/N{}E{}_{}.tif'.format(lat_min, lon_min, zoom))
 print("Merge complete")
 
 shutil.rmtree(temp_dir)
