@@ -9,4 +9,4 @@ path = "output/N24E121_13.tif"
 gdal.Translate("output/N24E121_final.tif",
                "output/N24E121.tif", 
                 outputSRS='EPSG:4326',
-                outputBounds=[121, 25, 122, 24])
+                projWin=[121, 25, 122, 24])

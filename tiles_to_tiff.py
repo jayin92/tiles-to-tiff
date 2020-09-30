@@ -4,24 +4,28 @@ import os
 import glob
 import subprocess
 import shutil
+import requests
 
 from fp.fp import FreeProxy
 from tile_convert import bbox_to_xyz, tile_edges
 from osgeo import gdal
 
 #---------- CONFIGURATION -----------#
-tile_server = "https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+# tile_server = "https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+tile_server = "https://api.maptiler.com/tiles/satellite/{z}/{x}/{y}.jpg?key=AIf4cL2Jkh4Vlf3AylHN"
 temp_dir = os.path.join(os.path.dirname(__file__), 'temp')
-output_dir = os.path.join(os.path.dirname(__file__), 'output')
-zoom = 5
+output_dir = os.path.join(os.path.dirname(__file__), 'output/')
+zoom = 13
 
-lon_min = 121
-lat_min = 23
+lon_min = 23
+lat_min = 120
 lon_max = lon_min + 1
 lat_max = lat_min + 1
 # lon_max = 122
 # lat_max = 25
 #-----------------------------------#
+
+
 
 
 def download_tile(x, y, z, tile_server):
@@ -30,16 +34,20 @@ def download_tile(x, y, z, tile_server):
         "{y}", str(y)).replace(
         "{z}", str(z))
     path = '{}/{}_{}_{}.png'.format(temp_dir, x, y, z)
-    
+    if(os.path.isfile(path)):
+        return path
+    # print("getting proxy")
+    # proxies = {"http": FreeProxy(rand=True).get()}
+    # proxy = urllib.request.ProxyHandler(pro)
+    # opener = urllib.request.build_opener(proxy)
+    # urllib.request.install_opener(opener)
+    # print(proxies)
+    # r = requests.get(url)
+    # print(path)
+    # print(r.content)
+    # with open(path, 'wb') as f:
+        # f.write(r.content)
     urllib.request.urlretrieve(url, path)
-    # try:
-    # except:
-    #     print("getting proxy")
-    #     pro = {"http": FreeProxy(rand=True).get()}
-    #     proxy = urllib.request.ProxyHandler(pro)
-    #     opener = urllib.request.build_opener(proxy)
-    #     urllib.request.install_opener(opener)
-    #     return download_tile(x, y, z, tile_server)
     return(path)
 
 
@@ -55,12 +63,18 @@ def merge_tiles(input_pattern, output_path):
 def georeference_raster_tile(x, y, z, path):
     bounds = tile_edges(x, y, z)
     filename, extension = os.path.splitext(path)
-    print(bounds)
     gdal.Translate(filename + '.tif',
                    path,
                    outputSRS='EPSG:4326',
                    outputBounds=bounds)
 
+def crop(input, output, lat, lon):
+    gdal.Translate(
+        output,
+        input,
+        outputSRS='EPSG:4326',
+        projWin=[lon, lat+1, lon+1, lat]
+    )
 
 
 x_min, x_max, y_min, y_max = bbox_to_xyz(
@@ -79,6 +93,16 @@ print("Download complete")
 print("Merging tiles")
 merge_tiles(temp_dir + '/*.tif', output_dir + '/N{}E{}_{}.tif'.format(lat_min, lon_min, zoom))
 print("Merge complete")
+
+print("Croping")
+crop(
+    output_dir + '/N{}E{}_{}.tif'.format(lat_min, lon_min, zoom), 
+    output_dir + 'Taiwan/N{}E{}_{}_final_sat.tif'.format(lat_min, lon_min, zoom), 
+    lat_min, 
+    lon_min
+    )
+print("Crop complete")
+
 
 shutil.rmtree(temp_dir)
 os.makedirs(temp_dir)
