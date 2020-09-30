@@ -1,4 +1,4 @@
-from math import log, tan, radians, cos, pi, floor, degrees, atan, sinh
+from math import log, tan, radians, cos, pi, floor, degrees, atan, sinh, asinh
 
 
 def sec(x):
@@ -6,9 +6,10 @@ def sec(x):
 
 
 def latlon_to_xyz(lat, lon, z):
-    tile_count = pow(2, z)
-    x = (lon + 180) / 360
-    y = (1 - log(tan(radians(lat)) + sec(radians(lat))) / pi) / 2
+    tile_count = 2.0 ** z
+    lat_rad = radians(lat)
+    x = (lon + 180.0) / 360.0
+    y = (1.0 - asinh(tan(lat_rad)) / pi) / 2
     return(tile_count*x, tile_count*y)
 
 
@@ -24,7 +25,7 @@ def mercatorToLat(mercatorY):
 
 
 def y_to_lat_edges(y, z):
-    tile_count = pow(2, z)
+    tile_count = 2.0 ** z
     unit = 1 / tile_count
     relative_y1 = y * unit
     relative_y2 = relative_y1 + unit
@@ -34,7 +35,7 @@ def y_to_lat_edges(y, z):
 
 
 def x_to_lon_edges(x, z):
-    tile_count = pow(2, z)
+    tile_count = 2.0 ** z
     unit = 360 / tile_count
     lon1 = -180 + x * unit
     lon2 = lon1 + unit

@@ -4,14 +4,16 @@ import os
 import glob
 import subprocess
 import shutil
+
+from fp.fp import FreeProxy
 from tile_convert import bbox_to_xyz, tile_edges
 from osgeo import gdal
 
 #---------- CONFIGURATION -----------#
-tile_server = "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+tile_server = "https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
 temp_dir = os.path.join(os.path.dirname(__file__), 'temp')
 output_dir = os.path.join(os.path.dirname(__file__), 'output')
-zoom = 13
+zoom = 5
 
 lon_min = 121
 lat_min = 23
@@ -28,7 +30,16 @@ def download_tile(x, y, z, tile_server):
         "{y}", str(y)).replace(
         "{z}", str(z))
     path = '{}/{}_{}_{}.png'.format(temp_dir, x, y, z)
+    
     urllib.request.urlretrieve(url, path)
+    # try:
+    # except:
+    #     print("getting proxy")
+    #     pro = {"http": FreeProxy(rand=True).get()}
+    #     proxy = urllib.request.ProxyHandler(pro)
+    #     opener = urllib.request.build_opener(proxy)
+    #     urllib.request.install_opener(opener)
+    #     return download_tile(x, y, z, tile_server)
     return(path)
 
 
@@ -44,10 +55,12 @@ def merge_tiles(input_pattern, output_path):
 def georeference_raster_tile(x, y, z, path):
     bounds = tile_edges(x, y, z)
     filename, extension = os.path.splitext(path)
+    print(bounds)
     gdal.Translate(filename + '.tif',
                    path,
                    outputSRS='EPSG:4326',
                    outputBounds=bounds)
+
 
 
 x_min, x_max, y_min, y_max = bbox_to_xyz(
