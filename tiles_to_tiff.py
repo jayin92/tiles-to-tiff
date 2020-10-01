@@ -5,6 +5,7 @@ import glob
 import subprocess
 import shutil
 import requests
+from tqdm import tqdm
 
 from fp.fp import FreeProxy
 from tile_convert import bbox_to_xyz, tile_edges
@@ -17,8 +18,8 @@ temp_dir = os.path.join(os.path.dirname(__file__), 'temp')
 output_dir = os.path.join(os.path.dirname(__file__), 'output/')
 zoom = 13
 
-lon_min = 23
-lat_min = 120
+lat_min = 27
+lon_min = 98
 lon_max = lon_min + 1
 lat_max = lat_min + 1
 # lon_max = 122
@@ -33,7 +34,7 @@ def download_tile(x, y, z, tile_server):
         "{x}", str(x)).replace(
         "{y}", str(y)).replace(
         "{z}", str(z))
-    path = '{}/{}_{}_{}.png'.format(temp_dir, x, y, z)
+    path = '{}/{}_{}_{}.jpg'.format(temp_dir, x, y, z)
     if(os.path.isfile(path)):
         return path
     # print("getting proxy")
@@ -77,32 +78,57 @@ def crop(input, output, lat, lon):
     )
 
 
-x_min, x_max, y_min, y_max = bbox_to_xyz(
-    lon_min, lon_max, lat_min, lat_max, zoom)
-
-print("Downloading {} tiles".format((x_max - x_min + 1) * (y_max - y_min + 1)))
-
-for x in range(x_min, x_max + 1):
-    for y in range(y_min, y_max + 1):
-        print("{},{}".format(x, y))
-        png_path = download_tile(x, y, zoom, tile_server)
-        georeference_raster_tile(x, y, zoom, png_path)
-
-print("Download complete")
-
-print("Merging tiles")
-merge_tiles(temp_dir + '/*.tif', output_dir + '/N{}E{}_{}.tif'.format(lat_min, lon_min, zoom))
-print("Merge complete")
-
-print("Croping")
-crop(
-    output_dir + '/N{}E{}_{}.tif'.format(lat_min, lon_min, zoom), 
-    output_dir + 'Taiwan/N{}E{}_{}_final_sat.tif'.format(lat_min, lon_min, zoom), 
-    lat_min, 
-    lon_min
-    )
-print("Crop complete")
+ran = [
+    (26, 101),
+    (26, 100),
+    (26, 99),
+    (26, 98),
+    (29, 101),
+    (29, 100),
+    (29, 99),
+    (28, 101),
+    (28, 100),
+    (28, 99),
+    (28, 98),
+    (27, 101),
+    (27, 100)
+]
 
 
-shutil.rmtree(temp_dir)
-os.makedirs(temp_dir)
+for lat_min, lon_min in ran:
+    print(lat_min, lon_min)
+    lat_max = lat_min + 1
+    lon_max = lon_min + 1
+    x_min, x_max, y_min, y_max = bbox_to_xyz(
+        lon_min, lon_max, lat_min, lat_max, zoom)
+
+    print("Downloading {} tiles".format((x_max - x_min + 1) * (y_max - y_min + 1)))
+
+    pbar = tqdm(total=(x_max - x_min + 1) * (y_max - y_min + 1))
+    for x in range(x_min, x_max + 1):
+        for y in range(y_min, y_max + 1):
+            # print("{},{}".format(x, y))
+            pbar.update(1)
+            pbar.set_description("{},{}".format(x, y))
+            png_path = download_tile(x, y, zoom, tile_server)
+            georeference_raster_tile(x, y, zoom, png_path)
+
+    pbar.close()
+    print("Download complete")
+
+    print("Merging tiles")
+    merge_tiles(temp_dir + '/*.tif', output_dir + '/N{}E{}_{}.tif'.format(lat_min, lon_min, zoom))
+    print("Merge complete")
+
+    print("Croping")
+    crop(
+        output_dir + '/N{}E{}_{}.tif'.format(lat_min, lon_min, zoom), 
+        output_dir + 'China/N{}E{}_{}_final_sat.tif'.format(lat_min, lon_min, zoom), 
+        lat_min, 
+        lon_min
+        )
+    print("Crop complete")
+
+
+    shutil.rmtree(temp_dir)
+    os.makedirs(temp_dir)
